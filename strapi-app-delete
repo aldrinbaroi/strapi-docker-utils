@@ -1,0 +1,34 @@
+#
+# Delete Strapi Docker application
+#   - Removes Strapi app's container
+#   - Removes Strapi app's local folder
+#
+
+STRAPI_APP_NAME=$1
+
+if [ -z "$STRAPI_APP_NAME" ]; then 
+	source ./strapi-app.config
+fi
+
+CONTAINER_NAME="strapi-${STRAPI_APP_NAME}"
+
+CONTAINER_ID=$(docker ps -f "Name=${CONTAINER_NAME}" -q) 
+if [ ! -z "${CONTAINER_ID}" ]; then
+	echo "[${STRAPI_APP_NAME}] application is running. Stopping it..."
+	docker stop ${CONTAINER_ID}
+fi
+
+CONTAINER_ID=$(docker container ls -af "Name=${CONTAINER_NAME}" -q) 
+if [ -z "${CONTAINER_ID}" ]; then
+	echo "[${STRAPI_APP_NAME}] application container doesn't exist."
+else
+	echo "Removing ${STRAPI_APP_NAME} application container..."
+	docker container rm ${CONTAINER_NAME}
+fi
+
+if [ -d ${STRAPI_APP_NAME} ]; then
+	echo "Deleting [${STRAPI_APP_NAME}] application directory..."
+	rm -rf ./${STRAPI_APP_NAME}
+fi
+
+#::END::
