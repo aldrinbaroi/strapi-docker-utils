@@ -1,0 +1,42 @@
+#
+# Run Strapi Docker application
+#
+
+source ./strapi-app.config
+
+CONTAINER_NAME="strapi-${STRAPI_APP_NAME}" 
+CONTAINER_ID=$(docker ps -f "Name=${CONTAINER_NAME}" -q)
+
+if [[ -z "${CONTAINER_ID}" ]]; then
+	CONTAINER_ID=$(docker container ls -af "Name=${CONTAINER_NAME}" -q)
+	if [[ -z "${CONTAINER_ID}" ]]; then
+		if [ -d ${STRAPI_APP_NAME} ]; then
+			# Application folder existing but container doens't exist!!!
+			echo "Application folder exist but container doens't exist!!!"
+			echo "NEED TO FIGURE OUT HOW TO HANDLE THIS"
+		else
+			# Create application
+			echo "[${STRAPI_APP_NAME}] application doesn't exist."
+			./strapi-app-create
+		fi
+	else
+		echo "Starting existing container..."
+		if [ -d ${STRAPI_APP_NAME} ]; then
+			echo "Starting ${CONTAINER_NAME}..."
+			screen -S "strapi-app-create" -dm \
+				docker start -i ${CONTAINER_NAME}
+		else
+			echo "Something is wrong..."
+			echo "[${STRAPI_APP_NAME}] application container exist but development folder doesn't exist."
+			echo "Aborting..."
+		fi
+	fi 
+else
+	echo ""
+	echo "[${STRAPI_APP_NAME}] application is already running."
+	echo "  Docker container name = ${CONTAINER_NAME}"
+	echo "  Docker container ID   = ${CONTAINER_ID}"
+	echo ""
+fi
+
+#::END::
