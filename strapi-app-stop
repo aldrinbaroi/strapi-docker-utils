@@ -1,0 +1,16 @@
+#
+# Stop Strapi Docker application 
+#
+source ./strapi-app.config
+
+CONTAINER_NAME="strapi-${STRAPI_APP_NAME}"
+
+echo "Stopping [${STRAPI_APP_NAME}] application..."
+CONTAINER_ID=$(docker ps -f "Name=${CONTAINER_NAME}" -q)
+if [ -z "$CONTAINER_ID" ]; then
+	echo "[${STRAPI_APP_NAME}] application is not running."
+else
+	docker stop ${CONTAINER_NAME}
+fi
+
+#::END::
