@@ -1,0 +1,50 @@
+#
+# Create Strapi application
+#
+
+log() {
+	local msg=${1:-""}
+	echo ""
+	echo "[strapi-app-create] ${msg}"
+}
+
+source ./strapi-app.config
+
+CONTAINER_NAME="strapi-${STRAPI_APP_NAME}"
+
+screen -S "strapi-app-create" -dm \
+docker run -it \
+  --name ${CONTAINER_NAME} \
+  -e DATABASE_CLIENT=${DATABASE_CLIENT} \
+  -e DATABASE_NAME=${DATABASE_NAME} \
+  -e DATABASE_HOST=${DATABASE_HOST} \
+  -e DATABASE_PORT=${DATABASE_PORT} \
+  -e DATABASE_USERNAME=${DATABASE_USERNAME} \
+  -e DATABASE_PASSWORD=${DATABASE_PASSWORD} \
+  -p 1337:1337 \
+  -v $(pwd)/${STRAPI_APP_NAME}:/srv/app \
+  ${STRAPI_IMAGE} 
+
+if [ -z "$PLUGIN_LIST" ]; then
+	log "No plugins to install."
+else 
+	while true; do
+		sleep 4
+		log "Waiting for application container to start."
+		CONTAINER_ID=$(docker ps -f "Name=${CONTAINER_NAME}" -q)
+		[ -z "$CONTAINER_ID" ] && continue || break 
+	done
+	docker logs -f "$CONTAINER_NAME" > /dev/tty 2>&1 &
+	while true; do
+		sleep 4
+		log "Waiting for application to come on line."
+		HTTP_STATUS=$(curl  -so /dev/null -w "%{http_code}" "http://localhost:1337")
+		[ -z "$HTTP_STATUS" ] && continue
+		[ "$HTTP_STATUS" != 200 ] && continue || break
+	done 
+	kill $(ps  | grep "docker logs" | grep -v "grep" | awk '{print $1}') > /dev/null 2>&1
+	log "Installing plugins..."
+	./strapi-app-install-plugin ${PLUGIN_LIST}
+fi
+
+#::END::
