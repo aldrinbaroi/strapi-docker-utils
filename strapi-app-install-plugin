@@ -1,0 +1,35 @@
+#
+# Install plugin into existing Strapi application container
+#
+
+PLUGIN_LIST=$1
+
+if [ -z "${PLUGIN_LIST}" ]; then
+	echo "Plugin name(s) not provided.  Aborting..."
+	exit 1
+fi 
+
+source ./strapi-app.config
+
+CONTAINER_NAME="strapi-${STRAPI_APP_NAME}" 
+CONTAINER_ID=$(docker ps -f "Name=${CONTAINER_NAME}" -q)
+
+if [[ -z "${CONTAINER_ID}" ]]; then
+	echo "[${STRAPI_APP_NAME}] application is not running. Unable tot install plugin."
+	exit 1
+else
+	read -a PL <<< ${PLUGIN_LIST//,/ }
+	COUNT=${#PL[@]}
+	[ $COUNT > 1 ] && PLUGINS=plugins || PLUGINS=plugin
+	echo ""
+	echo "Installing $PLUGINS into [${STRAPI_APP_NAME}] application..."
+	for PLUGIN_NAME in ${PLUGIN_LIST//,/ }; do
+		echo "Installing plugin [${PLUGIN_NAME}]..."
+		docker exec -it ${CONTAINER_ID} npm install ${PLUGIN_NAME}
+	done
+	echo "Rebuiling Strapi admin UI..."
+	docker exec -it ${CONTAINER_ID} strapi build
+	echo ""
+fi
+
+#::END::
